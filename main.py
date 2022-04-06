@@ -7,18 +7,18 @@ import sys
 import urllib.request
 from bs4 import BeautifulSoup
 import csv
-
+# TODO scrape images / price history
 csv_path_all_cards = 'index.csv'
 csv_path_expensive_cards = 'pkcardsExpensive'
 Prices = [10.00, 100.00, 150.00, 200.00, 300.00, 400.00, sys.float_info.max]
 
 # collection of all the series we are interested in:
-COLLECTION_SIZE = 81
+COLLECTION_SIZE = 80
 
 
 # assigns series name by number.
-def get_next_series(series_number):
-    series = {
+def get_next_set(set_number):
+    set_name = {
         0: 'swsh08-fusion-strike',
         1: 'celebrations',
         2: 'celebrations-classic-collection',
@@ -102,61 +102,63 @@ def get_next_series(series_number):
         80: 'sm-cosmic-eclipse'
 
     }
-    return series.get(series_number, 'default series value error')
+    return set_name.get(set_number, 'default series value error')
+
 
 
 # gets the series name based on current series number.
-def grab_series(source, series_number):
-    series = get_next_series(series_number)
-    print(series)
-    source = 'https://shop.tcgplayer.com/price-guide/pokemon/' + series
+def grab_series(source, set_number):
+    set_name = get_next_set(set_number)
+    print(set_name)
+    source = 'https://shop.tcgplayer.com/price-guide/pokemon/' + set_name
     return source
 
 
 # this function is here for later project expansion,
 # where csv path can be changed or parsed from a text file.
-def scape_all_series_of_interest(source, series_number):
+def scape_all_series_of_interest(source, set_number):
     csv_path = csv_path_all_cards
-    scrape_cards(source, series_number, csv_path)
+    scrape_cards(source, set_number, csv_path)
 
 
 # function for opening our data base for writing and getting our main xml to parse.
-def scrape_cards(source, series_number, csv_path):
+def scrape_cards(source, set_number, csv_path):
     with open(csv_path, 'w', newline="") as csv_file:
-        source = grab_series(source, series_number)
-        series = get_next_series(series_number)
-        while series_number < COLLECTION_SIZE:
+        source = grab_series(source, set_number)
+        series = get_next_set(set_number)
+        while set_number < COLLECTION_SIZE:
             page = urllib.request.urlopen(source)
             soup = BeautifulSoup(page, 'html.parser')
             attr = soup.find('table', class_="priceGuideTable tablesorter")
             print(source)
-            get_Cards(series_number, attr, series, csv_file, )
-            series_number = series_number + 1
-            series = get_next_series(series_number)
-            source = grab_series(source, series_number)
+            get_Cards(set_number, attr, series, csv_file, )
+            set_number = set_number + 1
+            series = get_next_set(set_number)
+            source = grab_series(source, set_number)
         print(source)
 
 
 # gets card data from webpage based on xml, yes they labeled sections even and odd, unfortunately.
 # so I combined them into one result list.
-def get_Cards(series_number, collection, series, csv_file):
+def get_Cards(set_number, collection, series, csv_file):
     writer = csv.writer(csv_file)
-    writer.writerow(["series id", "Name", "Rarity", "Price", "Image"])
+    # writer.writerow(["set", "Name", "Rarity", "Price", "Image"])
     card_collection_odd = collection.findAll('tr', class_="odd")
     card_collection_even = collection.findAll('tr', class_="even")
     card_collection = card_collection_even + card_collection_odd
+    set_name = get_next_set(set_number)
     for card in card_collection:
         card_name = card.find('div', class_="productDetail")
         card_rarity = card.find('td', class_="rarity")
         card_price = card.find('td', class_="marketPrice")
         card_image = card.find('img')
-        write_data(series_number, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip(),
+        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip(),
                    card_image.get('src'))
 
 
 # writes card data to database
-def write_data(series_number, writer, card_name, card_rarity, card_price, card_image):
-    writer.writerow([series_number, card_name, card_rarity, card_price, card_image])
+def write_data(set_number, writer, card_name, card_rarity, card_price, card_image):
+    writer.writerow([set_number, card_name, card_rarity, card_price, card_image])
 
 
 def is_expensive(card_price, price_query, index):
@@ -176,33 +178,33 @@ def read_write_expensive_cards(csv_src, csv_des, price_query, index):
         with open(csv_des, 'w', newline="") as csv_file_write:  # writing query to the new csv for our records
             writer = csv.writer(csv_file_write)
             writer.writerow(
-                ['Series/Set', 'Name', 'Price(>' + str(price_query) + '<' + str(Prices[index + 1]) + ')', 'Image'])
+                ['Set', 'Name', 'Price(>' + str(price_query) + '<' + str(Prices[index + 1]) + ')', 'Image'])
             csv_dict_reader = csv.reader(csv_file_read)
             for row in csv_dict_reader:
                 for col in csv_dict_reader:
                     price_is_expensive = is_expensive(col[3], price_query, index)
                     if price_is_expensive:
-                        series = get_next_series(int(col[0]))
-                        writer.writerow([series, col[1], col[3], col[4]])
+                        set = get_next_set(int(col[0]))
+                        writer.writerow([set, col[1], col[3], col[4]])
 
 
 # main:
 if __name__ == '__main__':
     source = 'https://shop.tcgplayer.com/price-guide/pokemon/'  # base source to parse
-    series_number = 0  # begin with the first set or series of interest.
+    set_number = 0  # begin with the first set or series of interest.
     scrape_again = True
 
     if scrape_again:
         print("scraping tcg player for card series of interest:")
         print("Populating csv file by series...")
-        scape_all_series_of_interest(source, series_number)
+        scape_all_series_of_interest(source, set_number)
         print("Scrape complete.")
     i = 0
     for price_query in Prices:
         if price_query < sys.float_info.max:
             print("Filtering CSV by price query: > $" + str(price_query))
             csv_path_export = csv_path_expensive_cards + '-' + str(price_query) + '.csv'
-            read_write_expensive_cards(csv_path_all_cards, csv_path_export, price_query, i)
+            # read_write_expensive_cards(csv_path_all_cards, csv_path_export, price_query, i)
             i = i + 1
             print("Search complete.")
             print("Please refer to index.csv and pkcardsExpensive.csv files.")
