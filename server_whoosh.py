@@ -1,3 +1,8 @@
+# I kept this Whoosh server example in my project and modified the search
+# I wanted to make my search work with the UI but ran out of time
+
+import csv
+
 from flask import Flask, render_template, url_for, request
 import whoosh
 
@@ -6,11 +11,15 @@ from whoosh.index import create_in
 from whoosh.index import open_dir
 from whoosh import index
 from whoosh.fields import *  # schema, text, ID
-from whoosh.qparser import QueryParser
+from whoosh.qparser import QueryParser, OrGroup
 from whoosh.qparser import MultifieldParser
 from whoosh import qparser
 
+import CreateSchema
+from CreateTuple import createPokemonTuple
+
 app = Flask(__name__)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -21,8 +30,8 @@ def index():
 # used in the Hello World link :
 @app.route('/my-link/')
 def my_link():
-    print('I got clicked!')
-    return 'Click.'
+    print('User is worried')
+    return 'Your worried about the link.'
 
 
 @app.route('/results/', methods=['GET', 'POST'])
@@ -35,11 +44,11 @@ def results():
 
     query = data.get('searchterm')
     test = data.get('test')
-    titles, description = mySearcher.search(query)
+    result = mySearcher.search(query, 10)
     print("You searched for: " + query)
     print("Alternatively, the second box has: " + test)
 
-    return render_template('results.html', query=query, results=zip(titles, description))
+    return render_template('results.html', query=query, results=zip(result, test))
 
 
 class MyWhooshSearcher(object):
@@ -48,43 +57,45 @@ class MyWhooshSearcher(object):
     def __init__(self):
         super(MyWhooshSearcher, self).__init__()
 
-    def search(self, queryEntered):
-        title = list()
-        description = list()
+    def openCSVFile(self):
+        with open('index.csv', newline='') as file:
+            reader = csv.reader(file)
+            pokemonCardData = list(reader)
+        return pokemonCardData
+
+    def search(self, queryEntered, topResults):
+        fields = ['set', 'name', 'rarity', 'price']
+        resultList = list()
         with self.indexer.searcher() as search:
-            query = MultifieldParser(['title', 'description'], schema=self.indexer.schema)
-            query = query.parse(queryEntered)
-            results = search.search(query, limit=None)
-
+            # if using OR search i.e. "charizard"
+            if queryEntered[0] == '"' and queryEntered[-1] == '"':
+                queryEntered = queryEntered[1:-1]
+                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
+            else:
+                # whoosh uses AND search by default if not explicit:
+                parser = MultifieldParser(fields, schema=self.indexer.schema)
+            query = parser.parse(queryEntered)
+            results = search.search(query, limit=topResults)
             for x in results:
-                title.append(x['title'])
-                description.append(x['description'])
+                resultList.append(createPokemonTuple(x))
 
-        return title, description
+        return resultList
 
     def index(self):
-        # schema is the set of all possible fields in a document.
-        # note: seriesid denotes the series, not the card, not a unique id per card.
-        schema = Schema(seriesid=ID(stored=True), name=TEXT(stored=True), rarity=TEXT(stored=True),
-                        price=TEXT(stored=True), image=TEXT(stored=True))
+        schema = CreateSchema.PokemonCardSchema()
         # we can search documents using indexer
         # stores the schema in a directory called "myIndex":
-        indexer = create_in('myPokemonIndex', schema)
+        create_in('myPokemonIndex', schema)
+        indexer = open_dir('myPokemonIndex')
         writer = indexer.writer()
-
+        dbfile = self.openCSVFile()
         # documents we are indexing for search:
-        dbfile_path = "index.csv"
-        #TODO use csv reader instead of standard file reader.
-        with open(dbfile_path, 'r', encoding='utf-8') as dbfile:
-            for card_data in dbfile:
+        for card_data in dbfile:
+            writer.add_document(set=card_data[0],
+                                name=card_data[1],
+                                rarity=card_data[2])
 
-                writer.add_document(seriesid=card_data[:1])
-
-            writer.add_document(content=card_data)
-        # writer.add_document(id=u'1', title=u'hello there', description=u'cs hello, how are you')
-        # writer.add_document(id=u'2', title=u'hello bye', description=u'nice to meetcha')
         writer.commit()
-
         self.indexer = indexer
 
 
