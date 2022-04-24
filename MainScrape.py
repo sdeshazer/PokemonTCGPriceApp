@@ -15,7 +15,7 @@ Prices = [10.00, 100.00, 150.00, 200.00, 300.00, 400.00, sys.float_info.max]
 
 # collection of all the series we are interested in:
 COLLECTION_SIZE = 80
-
+language = '?Language=English'
 
 # assigns series name by number.
 def get_next_set(set_number):
@@ -148,14 +148,17 @@ def get_Cards(set_number, collection, series, csv_file):
     set_name = get_next_set(set_number)
     for card in card_collection:
         card_name = card.find('div', class_="productDetail")
+        print("card name is of type:" + str(card_name.text.strip()))
+        card_details_page = card_name.find('a')['href']
+        print("card details page:" + str(card_details_page))
         card_rarity = card.find('td', class_="rarity")
         card_price = card.find('td', class_="marketPrice")
-        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip())
+        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip(), str(card_details_page))
 
 
 # writes card data to database
-def write_data(set_number, writer, card_name, card_rarity, card_price):
-    writer.writerow([set_number, card_name, card_rarity, card_price])
+def write_data(set_number, writer, card_name, card_rarity, card_price, card_details_page):
+    writer.writerow([set_number, card_name, card_rarity, card_price, card_details_page])
 
 
 def is_expensive(card_price, price_query, index):
@@ -185,7 +188,7 @@ def read_write_expensive_cards(csv_src, csv_des, price_query, index):
                         writer.writerow([set, col[1], col[3], col[4]])
 
 
-# main:
+# test / rescrape database:
 if __name__ == '__main__':
     source = 'https://shop.tcgplayer.com/price-guide/pokemon/'  # base source to parse
     set_number = 0  # begin with the first set or series of interest.
