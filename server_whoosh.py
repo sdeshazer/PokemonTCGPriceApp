@@ -10,14 +10,16 @@ import whoosh
 from whoosh.index import create_in
 
 from whoosh.index import open_dir
-from whoosh import index
+from whoosh import index, sorting
 from whoosh.fields import *  # schema, text, ID
 from whoosh.qparser import QueryParser, OrGroup
 from whoosh.qparser import MultifieldParser
+from whoosh import collectors
 from whoosh import qparser
 
 import CreateSchema
 from CreateTuple import createPokemonTuple
+from PrintResults import printPokemonSearchResults
 
 app = Flask(__name__)
 
@@ -45,9 +47,9 @@ def results():
     # data[0] query string
     # data[1] set id
 
-    result = mySearcher.search(query, 10)
+    result = mySearcher.search_query_once(query, 10)
     print("You searched for: " + query)
-    return render_template('results.html', query=query, results=zip(result, test))
+    return result
 
 
 class MyWhooshSearcher(object):
@@ -62,8 +64,9 @@ class MyWhooshSearcher(object):
             pokemonCardData = list(reader)
         return pokemonCardData
 
-    def search(self, queryEntered, topResults):
-        fields = ['set', 'name', 'card_id' 'rarity', 'price']
+    # searches all cards across all sets in the database:
+    def search_query_once(self, queryEntered, topResults):
+        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
         resultList = list()
         with self.indexer.searcher() as search:
             # if using OR search i.e. "charizard"
@@ -74,11 +77,32 @@ class MyWhooshSearcher(object):
                 # whoosh uses AND search by default if not explicit:
                 parser = MultifieldParser(fields, schema=self.indexer.schema)
             query = parser.parse(queryEntered)
-            results = search.search(query, limit=topResults)
+            results = search.search_query_once(query, limit=topResults, groupedby='set')
             for x in results:
                 resultList.append(createPokemonTuple(x))
 
         return resultList
+
+    # searches based on set:
+    def search_query_on_set(self, setQueryEntered, queryEntered, topResults):
+        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
+        resultList = list()
+        with self.indexer.searcher() as search:
+            # if using OR search i.e. "charizard"
+            if queryEntered[0] == '"' and queryEntered[-1] == '"':
+                queryEntered = queryEntered[1:-1]
+                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
+            else:
+                # whoosh uses AND search by default if not explicit:
+                parser = MultifieldParser(fields, schema=self.indexer.schema)
+            query = parser.parse(queryEntered)
+            results = search.search(query, limit=topResults, groupedby='set')
+            for x in results:
+                resultList.append(createPokemonTuple(x))
+            # filter by the set selected:
+            filtered_results = filter(lambda set: set[0].startswith(setQueryEntered), resultList)
+        return filtered_results
+
 
     def index(self):
         schema = CreateSchema.PokemonCardSchema()
@@ -105,9 +129,12 @@ class MyWhooshSearcher(object):
 # search(indexer, 'nice')
 
 if __name__ == '__main__':
-    global mySearcher
     mySearcher = MyWhooshSearcher()
     mySearcher.index()
     # title, description = mySearcher.search('hello')
     # print(title)
-    app.run(debug=True)
+    # app.run(debug=True)
+    facet = sorting.FieldFacet("set", reverse=False)
+    returned_results = mySearcher.search_query_on_set('celebrations', 'Pikachu', 10)
+
+    printPokemonSearchResults(returned_results)
