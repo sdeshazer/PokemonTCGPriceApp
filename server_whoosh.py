@@ -2,6 +2,7 @@
 # I wanted to make my search work with the UI but ran out of time
 
 import csv
+import requests
 
 from flask import Flask, render_template, url_for, request
 import whoosh
@@ -34,20 +35,18 @@ def my_link():
     return 'Your worried about the link.'
 
 
-@app.route('/results/', methods=['GET', 'POST'])
+# post request with query string goes here from front end
+@app.route('/query', methods=['GET'])
 def results():
     global mySearcher
-    if request.method == 'POST':
-        data = request.form
-    else:
-        data = request.args
 
-    query = data.get('searchterm')
-    test = data.get('test')
+    data = request.args
+    query = data.get('q')
+    # data[0] query string
+    # data[1] set id
+
     result = mySearcher.search(query, 10)
     print("You searched for: " + query)
-    print("Alternatively, the second box has: " + test)
-
     return render_template('results.html', query=query, results=zip(result, test))
 
 
@@ -64,7 +63,7 @@ class MyWhooshSearcher(object):
         return pokemonCardData
 
     def search(self, queryEntered, topResults):
-        fields = ['set', 'name', 'rarity', 'price']
+        fields = ['set', 'name', 'card_id' 'rarity', 'price']
         resultList = list()
         with self.indexer.searcher() as search:
             # if using OR search i.e. "charizard"
@@ -93,7 +92,10 @@ class MyWhooshSearcher(object):
         for card_data in dbfile:
             writer.add_document(set=card_data[0],
                                 name=card_data[1],
-                                rarity=card_data[2])
+                                card_id=card_data[2],
+                                rarity=card_data[3],
+                                price=card_data[4],
+                                image=card_data[5])
 
         writer.commit()
         self.indexer = indexer

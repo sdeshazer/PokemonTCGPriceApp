@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href= "{{ url_for('static',filename='styles/main.css') }}">
+		<title>Welcome to the sample!!</title>
+	</head>
+
+	<body>
+		<form method="get" action="{{ url_for('results') }}">
+			<header>Please enter one term in each search bar, otherwise refer to console using main.py</header>
+			<label for="searchterm">What do you want to search for:</label>
+			<input type="text" name="searchterm" /><br />
+			<input type="text" name='test'/>
+			<input type="submit" value="Search" />
+		</form>	
+
+		<a href="/my-link/">Dont Worry about this link</a>
+	</body>	
+</html>
