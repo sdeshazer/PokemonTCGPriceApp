@@ -54,8 +54,9 @@ def get_card_img(img_list):
 def get_card_price_history():
     try:
         element = browser.find_element(by=By.CLASS_NAME, value="price-guide__latest-sales__more")
-        element = element.find_element(by=By.ID, value="span")
-        element.click()
+        elements = element.find_elements(by=By.TAG_NAME, value="span")
+
+       # el.click()
 
     except Exception as e:
         print("err: closing chrome driver process with exit : " + str(e))

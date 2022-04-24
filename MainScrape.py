@@ -16,7 +16,7 @@ Prices = [10.00, 100.00, 150.00, 200.00, 300.00, 400.00, sys.float_info.max]
 # collection of all the series we are interested in:
 COLLECTION_SIZE = 80
 
-
+source = 'https://shop.tcgplayer.com/price-guide/pokemon/'  # base source to parse
 # assigns series name by number.
 def get_next_set(set_number):
     set_name = {
@@ -152,13 +152,14 @@ def get_Cards(set_number, collection, series, csv_file):
         print("card details page:" + str(card_details_page))
         card_rarity = card.find('td', class_="rarity")
         card_price = card.find('td', class_="marketPrice")
+        card_id_in_set = card.find('td', class_="number")
         card_image = card.find('img')
-        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip(), card_image.get('src'), str(card_details_page))
+        write_data(set_name, writer, card_name.text.strip(), card_id_in_set.text.strip(), card_rarity.text.strip(), card_price.text.strip(), card_image.get('src'), str(card_details_page))
 
 
 # writes card data to database
-def write_data(set_number, writer, card_name, card_rarity, card_price, card_image ,  card_details_page):
-    writer.writerow([set_number, card_name, card_rarity, card_price, card_image , card_details_page])
+def write_data(set_number, writer, card_name, card_id, card_rarity, card_price, card_image ,  card_details_page):
+    writer.writerow([set_number, card_name, card_id, card_rarity, card_price, card_image , card_details_page])
 
 
 def is_expensive(card_price, price_query, index):
@@ -185,12 +186,12 @@ def read_write_expensive_cards(csv_src, csv_des, price_query, index):
                     price_is_expensive = is_expensive(col[3], price_query, index)
                     if price_is_expensive:
                         set = get_next_set(int(col[0]))
-                        writer.writerow([set, col[1], col[3], col[4], col[5]])
+                        writer.writerow([set, col[1], col[3], col[4], col[5], col[6]])
 
 
 # test / re-scrape database:
 if __name__ == '__main__':
-    source = 'https://shop.tcgplayer.com/price-guide/pokemon/'  # base source to parse
+
     set_number = 0  # begin with the first set or series of interest.
     scrape_again = True
 
