@@ -10,22 +10,30 @@ from bs4 import BeautifulSoup
 import csv
 
 from selenium import webdriver
-browser = webdriver.Chrome()
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 
+# browser = webdriver.Chrome(executable_path='chromedriver.exe')
+
+
+option = webdriver.ChromeOptions()
+option.add_argument('headless')
+browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=option)
 url = 'https://www.tcgplayer.com/product/250334/pokemon-celebrations-classic-collection-luxray-gl-lvx'
 csv_path_current_card = 'currentCard.csv'
 language = '?Language=English'
 
-def scrape_card_details(card_details_page):
-    with open(csv_path_current_card, 'w', newline="") as csv_file:
-        page = urllib.request.urlopen(card_details_page)
-        soup = BeautifulSoup(page, 'html.parser')
-        page_attr = soup.findAll('section', class_="marketplace")
-        image_attr = soup.findAll('img', class_="progressive-image-main")
-        print(len(page_attr))
-        print(len(image_attr))
-        print(str(soup))
 
+def scrape_card_details(card_details_page):
+
+    with open(csv_path_current_card, 'w', newline="") as csv_file:
+        browser.get(url)
+        # browser.find_element(By.ID, 'img')
+        src = browser.find_elements(by=By.TAG_NAME, value='img')
+        print(len(src))
+        for img in src:
+            print(img.get_attribute('src'))
 
 
 
