@@ -20,6 +20,7 @@ from whoosh import qparser
 import CreateSchema
 from CreateTuple import createPokemonTuple
 from PrintResults import printPokemonSearchResults
+import json
 
 app = Flask(__name__)
 
@@ -33,23 +34,39 @@ def index():
 # used in the Hello World link :
 @app.route('/my-link/')
 def my_link():
-    print('User is worried')
-    return 'Your worried about the link.'
+    print('h')
+    return 'hello.'
 
 
 # post request with query string goes here from front end
-@app.route('/query', methods=['GET'])
+@app.route('/query/')
 def results():
     global mySearcher
 
     data = request.args
     query = data.get('q')
-    # data[0] query string
-    # data[1] set id
 
-    result = mySearcher.search_query_once(query, 10)
-    print("You searched for: " + query)
-    return result
+    if data.get('setId') is not None:
+        set_id = data.get('setId')
+        result = mySearcher.search_query_on_set(set_id, query)
+    else:
+        result = mySearcher.search_query_once(query)
+    return convert_to_json(result)
+
+
+def convert_to_json(result):
+    fields = ['setId', 'name', 'cardNumber', 'rarity', 'currentPrice', 'iconImage']
+    list_A = []
+    for j in result:
+        object_J = dict(zip(fields, j))
+        object_J['cardId'] = strip_card_id(object_J.get('cardNumber'))
+        list_A.append(object_J)
+
+    return json.dumps(list_A)
+
+
+def strip_card_id(card_num):
+    return card_num[:3]
 
 
 class MyWhooshSearcher(object):
@@ -65,44 +82,42 @@ class MyWhooshSearcher(object):
         return pokemonCardData
 
     # searches all cards across all sets in the database:
-    def search_query_once(self, queryEntered, topResults):
+    def search_query_once(self, queryEntered):
         fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
         resultList = list()
         with self.indexer.searcher() as search:
-            # if using OR search i.e. "charizard"
+            # if using AND search i.e. "charizard"
             if queryEntered[0] == '"' and queryEntered[-1] == '"':
                 queryEntered = queryEntered[1:-1]
-                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
-            else:
-                # whoosh uses AND search by default if not explicit:
                 parser = MultifieldParser(fields, schema=self.indexer.schema)
+            else:
+                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
             query = parser.parse(queryEntered)
-            results = search.search_query_once(query, limit=topResults, groupedby='set')
+            results = search.search(query, groupedby='set')
             for x in results:
                 resultList.append(createPokemonTuple(x))
 
         return resultList
 
     # searches based on set:
-    def search_query_on_set(self, setQueryEntered, queryEntered, topResults):
+    def search_query_on_set(self, setQueryEntered, queryEntered):
         fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
         resultList = list()
         with self.indexer.searcher() as search:
-            # if using OR search i.e. "charizard"
+            # if using AND search i.e. "charizard"
             if queryEntered[0] == '"' and queryEntered[-1] == '"':
                 queryEntered = queryEntered[1:-1]
-                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
-            else:
-                # whoosh uses AND search by default if not explicit:
                 parser = MultifieldParser(fields, schema=self.indexer.schema)
+            else:
+                # or search:
+                parser = MultifieldParser(fields, schema=self.indexer.schema, group=OrGroup)
             query = parser.parse(queryEntered)
-            results = search.search(query, limit=topResults, groupedby='set')
+            results = search.search(query, groupedby='set')
             for x in results:
                 resultList.append(createPokemonTuple(x))
             # filter by the set selected:
             filtered_results = filter(lambda set: set[0].startswith(setQueryEntered), resultList)
         return filtered_results
-
 
     def index(self):
         schema = CreateSchema.PokemonCardSchema()
@@ -133,8 +148,8 @@ if __name__ == '__main__':
     mySearcher.index()
     # title, description = mySearcher.search('hello')
     # print(title)
-    # app.run(debug=True)
+    app.run(debug=True)
     facet = sorting.FieldFacet("set", reverse=False)
-    returned_results = mySearcher.search_query_on_set('celebrations', 'Pikachu', 10)
+    returned_results = mySearcher.search_query_on_set('swsh08-fusion-strike', 'Pikachu')
 
     printPokemonSearchResults(returned_results)
