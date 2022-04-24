@@ -24,6 +24,7 @@ url = 'https://www.tcgplayer.com/product/250324/pokemon-celebrations-classic-col
 csv_path_current_card = 'currentCard.csv'
 language = '?Language=English'
 
+# takes in a url from the database on the card, this is done when the user clicks on an image:
 
 def scrape_card_details(card_details_page):
     with open(csv_path_current_card, 'w', newline="") as csv_file:
@@ -34,7 +35,7 @@ def scrape_card_details(card_details_page):
         card_img_src = get_card_img(img_list)
         print(card_img_src)
 
-
+# returns only the card image we need:
 def get_card_img(img_list):
     for img in img_list:
         img_src = img.get_attribute('src')
