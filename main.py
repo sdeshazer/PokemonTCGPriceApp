@@ -7,6 +7,7 @@ import sys
 import urllib.request
 from bs4 import BeautifulSoup
 import csv
+
 # TODO scrape images / price history
 csv_path_all_cards = 'index.csv'
 csv_path_expensive_cards = 'pkcardsExpensive'
@@ -100,10 +101,8 @@ def get_next_set(set_number):
         78: 'swsh-sword-and-shield-promo-cards',
         79: 'swsh02-rebel-clash',
         80: 'sm-cosmic-eclipse'
-
     }
     return set_name.get(set_number, 'default series value error')
-
 
 
 # gets the series name based on current series number.
@@ -121,7 +120,7 @@ def scape_all_series_of_interest(source, set_number):
     scrape_cards(source, set_number, csv_path)
 
 
-# function for opening our data base for writing and getting our main xml to parse.
+# function for opening our database for writing and getting our main xml to parse.
 def scrape_cards(source, set_number, csv_path):
     with open(csv_path, 'w', newline="") as csv_file:
         source = grab_series(source, set_number)
@@ -142,7 +141,7 @@ def scrape_cards(source, set_number, csv_path):
 # so I combined them into one result list.
 def get_Cards(set_number, collection, series, csv_file):
     writer = csv.writer(csv_file)
-    # writer.writerow(["set", "Name", "Rarity", "Price", "Image"])
+    # writer.writerow(["set", "Name", "Rarity", "Price"])
     card_collection_odd = collection.findAll('tr', class_="odd")
     card_collection_even = collection.findAll('tr', class_="even")
     card_collection = card_collection_even + card_collection_odd
@@ -151,14 +150,12 @@ def get_Cards(set_number, collection, series, csv_file):
         card_name = card.find('div', class_="productDetail")
         card_rarity = card.find('td', class_="rarity")
         card_price = card.find('td', class_="marketPrice")
-        card_image = card.find('img')
-        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip(),
-                   card_image.get('src'))
+        write_data(set_name, writer, card_name.text.strip(), card_rarity.text.strip(), card_price.text.strip())
 
 
 # writes card data to database
-def write_data(set_number, writer, card_name, card_rarity, card_price, card_image):
-    writer.writerow([set_number, card_name, card_rarity, card_price, card_image])
+def write_data(set_number, writer, card_name, card_rarity, card_price):
+    writer.writerow([set_number, card_name, card_rarity, card_price])
 
 
 def is_expensive(card_price, price_query, index):
@@ -178,7 +175,7 @@ def read_write_expensive_cards(csv_src, csv_des, price_query, index):
         with open(csv_des, 'w', newline="") as csv_file_write:  # writing query to the new csv for our records
             writer = csv.writer(csv_file_write)
             writer.writerow(
-                ['Set', 'Name', 'Price(>' + str(price_query) + '<' + str(Prices[index + 1]) + ')', 'Image'])
+                ['Set', 'Name', 'Price(>' + str(price_query) + '<' + str(Prices[index + 1]) + ')'])
             csv_dict_reader = csv.reader(csv_file_read)
             for row in csv_dict_reader:
                 for col in csv_dict_reader:
