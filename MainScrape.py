@@ -15,7 +15,7 @@ Prices = [10.00, 100.00, 150.00, 200.00, 300.00, 400.00, sys.float_info.max]
 
 # collection of all the series we are interested in:
 COLLECTION_SIZE = 80
-language = '?Language=English'
+
 
 # assigns series name by number.
 def get_next_set(set_number):
@@ -116,8 +116,7 @@ def grab_series(source, set_number):
 # this function is here for later project expansion,
 # where csv path can be changed or parsed from a text file.
 def scape_all_series_of_interest(source, set_number):
-    csv_path = csv_path_all_cards
-    scrape_cards(source, set_number, csv_path)
+    scrape_cards(source, set_number, csv_path_all_cards)
 
 
 # function for opening our database for writing and getting our main xml to parse.
@@ -130,7 +129,7 @@ def scrape_cards(source, set_number, csv_path):
             soup = BeautifulSoup(page, 'html.parser')
             attr = soup.find('table', class_="priceGuideTable tablesorter")
             print(source)
-            get_Cards(set_number, attr, series, csv_file, )
+            get_Cards(set_number, attr, series, csv_file)
             set_number = set_number + 1
             series = get_next_set(set_number)
             source = grab_series(source, set_number)
@@ -188,7 +187,7 @@ def read_write_expensive_cards(csv_src, csv_des, price_query, index):
                         writer.writerow([set, col[1], col[3], col[4]])
 
 
-# test / rescrape database:
+# test / re-scrape database:
 if __name__ == '__main__':
     source = 'https://shop.tcgplayer.com/price-guide/pokemon/'  # base source to parse
     set_number = 0  # begin with the first set or series of interest.
