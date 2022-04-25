@@ -6,10 +6,6 @@
 # should there ever be an issue with too mant chrome instances being open
 # windows: run Taskkill /IM chrome.exe /f
 
-import sys
-import urllib.request
-from bs4 import BeautifulSoup
-import csv
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service

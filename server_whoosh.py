@@ -7,7 +7,7 @@ import requests
 from flask import Flask, render_template, url_for, request
 from flask_cors import CORS
 import whoosh
-
+import json
 from whoosh.index import create_in
 
 from whoosh.index import open_dir
