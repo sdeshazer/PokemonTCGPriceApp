@@ -8,3 +8,4 @@ class PokemonCardSchema(SchemaClass):
     rarity = TEXT(stored=True)
     price = TEXT(stored=True)
     image = TEXT(stored=True)
+    card_link = TEXT(stored=True)

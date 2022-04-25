@@ -5,5 +5,6 @@ def createPokemonTuple(data):
                     data['card_id'],
                     data['rarity'],
                     data['price'],
-                    data['image'])
+                    data['image'],
+                    data['card_link'])
     return (result_tuple)

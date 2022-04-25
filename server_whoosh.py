@@ -22,6 +22,8 @@ from CreateTuple import createPokemonTuple
 from PrintResults import printPokemonSearchResults
 import json
 
+from SingleCardScraper import scrape_card_details, get_card_price_history
+
 app = Flask(__name__)
 
 
@@ -32,10 +34,25 @@ def index():
 
 
 # used in the Hello World link :
-@app.route('/my-link/')
-def my_link():
-    print('h')
-    return 'hello.'
+@app.route('/card-details/')
+def card_details():
+    data = request.args
+    card_link = data.get('cardLink')
+    img_url = scrape_card_details(card_link)
+    price_history = get_card_price_history()
+    card_name = data.get('name')
+    set_id = data.get('setId')
+    card_info = mySearcher.search_query_on_set(set_id, card_name, False)
+    return json.dumps(map_card_details(img_url, price_history, card_info))
+
+
+def map_card_details(img_url, price_history, card_info):
+
+    job = convert_to_json(card_info)
+    listA = json.loads(job)
+    listA[0]['priceOverTime'] = price_history
+    listA[0]['cardImageFullRes'] = img_url
+    return listA
 
 
 # post request with query string goes here from front end
@@ -48,14 +65,14 @@ def results():
 
     if data.get('setId') is not None:
         set_id = data.get('setId')
-        result = mySearcher.search_query_on_set(set_id, query)
+        result = mySearcher.search_query_on_set(set_id, query, False)
     else:
         result = mySearcher.search_query_once(query)
     return convert_to_json(result)
 
 
 def convert_to_json(result):
-    fields = ['setId', 'name', 'cardNumber', 'rarity', 'currentPrice', 'iconImage']
+    fields = ['setId', 'name', 'cardNumber', 'rarity', 'currentPrice', 'iconImage', 'cardLink']
     list_A = []
     for j in result:
         object_J = dict(zip(fields, j))
@@ -83,7 +100,7 @@ class MyWhooshSearcher(object):
 
     # searches all cards across all sets in the database:
     def search_query_once(self, queryEntered):
-        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
+        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image', 'cardLink']
         resultList = list()
         with self.indexer.searcher() as search:
             # if using AND search i.e. "charizard"
@@ -100,12 +117,12 @@ class MyWhooshSearcher(object):
         return resultList
 
     # searches based on set:
-    def search_query_on_set(self, setQueryEntered, queryEntered):
-        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image']
+    def search_query_on_set(self, setQueryEntered, queryEntered, useAnd):
+        fields = ['set', 'name', 'card_id' 'rarity', 'price', 'image', 'cardLink']
         resultList = list()
         with self.indexer.searcher() as search:
             # if using AND search i.e. "charizard"
-            if queryEntered[0] == '"' and queryEntered[-1] == '"':
+            if useAnd:
                 queryEntered = queryEntered[1:-1]
                 parser = MultifieldParser(fields, schema=self.indexer.schema)
             else:
@@ -134,7 +151,8 @@ class MyWhooshSearcher(object):
                                 card_id=card_data[2],
                                 rarity=card_data[3],
                                 price=card_data[4],
-                                image=card_data[5])
+                                image=card_data[5],
+                                card_link=card_data[6])
 
         writer.commit()
         self.indexer = indexer
@@ -150,6 +168,6 @@ if __name__ == '__main__':
     # print(title)
     app.run(debug=True)
     facet = sorting.FieldFacet("set", reverse=False)
-    returned_results = mySearcher.search_query_on_set('swsh08-fusion-strike', 'Pikachu')
+    returned_results = mySearcher.search_query_on_set('swsh08-fusion-strike', 'Pikachu', False)
 
     printPokemonSearchResults(returned_results)

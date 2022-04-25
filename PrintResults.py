@@ -1,6 +1,6 @@
 # displaying results in console:
 def printPokemonSearchResults(query):
-    header = ['SET', 'NAME', 'CARD_ID', 'RARITY', 'PRICE', 'IMAGE']
+    header = ['SET', 'NAME', 'CARD_ID', 'RARITY', 'PRICE', 'IMAGE', 'CARD_LINK']
     for item in header:
         print(item.ljust(80), end='')
     print('')
