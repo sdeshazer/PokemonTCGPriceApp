@@ -5,6 +5,7 @@ import csv
 import requests
 
 from flask import Flask, render_template, url_for, request
+from flask_cors import CORS
 import whoosh
 
 from whoosh.index import create_in
@@ -26,7 +27,7 @@ from SingleCardScraper import scrape_card_details, get_card_price_history
 
 app = Flask(__name__)
 
-
+cors = CORS(app)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     print("Someone is at the home page.")
@@ -166,6 +167,7 @@ if __name__ == '__main__':
     mySearcher.index()
     # title, description = mySearcher.search('hello')
     # print(title)
+
     app.run(debug=True)
     facet = sorting.FieldFacet("set", reverse=False)
     returned_results = mySearcher.search_query_on_set('swsh08-fusion-strike', 'Pikachu', False)
