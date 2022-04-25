@@ -5,6 +5,7 @@ import csv
 import requests
 
 from flask import Flask, render_template, url_for, request
+from flask_cors import CORS
 import whoosh
 
 from whoosh.index import create_in
@@ -20,13 +21,13 @@ from whoosh import qparser
 import CreateSchema
 from CreateTuple import createPokemonTuple
 from PrintResults import printPokemonSearchResults
-import json
+from flask import jsonify
 
 from SingleCardScraper import scrape_card_details, get_card_price_history
 
 app = Flask(__name__)
 
-
+cors = CORS(app)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     print("Someone is at the home page.")
@@ -43,7 +44,7 @@ def card_details():
     card_name = data.get('name')
     set_id = data.get('setId')
     card_info = mySearcher.search_query_on_set(set_id, card_name, False)
-    return json.dumps(map_card_details(img_url, price_history, card_info))
+    return jsonify(map_card_details(img_url, price_history, card_info))
 
 
 def map_card_details(img_url, price_history, card_info):
@@ -79,7 +80,7 @@ def convert_to_json(result):
         object_J['cardId'] = strip_card_id(object_J.get('cardNumber'))
         list_A.append(object_J)
 
-    return json.dumps(list_A)
+    return jsonify(list_A)
 
 
 def strip_card_id(card_num):
@@ -166,6 +167,7 @@ if __name__ == '__main__':
     mySearcher.index()
     # title, description = mySearcher.search('hello')
     # print(title)
+
     app.run(debug=True)
     facet = sorting.FieldFacet("set", reverse=False)
     returned_results = mySearcher.search_query_on_set('swsh08-fusion-strike', 'Pikachu', False)
