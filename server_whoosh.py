@@ -20,7 +20,7 @@ from whoosh import qparser
 import CreateSchema
 from CreateTuple import createPokemonTuple
 from PrintResults import printPokemonSearchResults
-import json
+from flask import jsonify
 
 from SingleCardScraper import scrape_card_details, get_card_price_history
 
@@ -43,7 +43,7 @@ def card_details():
     card_name = data.get('name')
     set_id = data.get('setId')
     card_info = mySearcher.search_query_on_set(set_id, card_name, False)
-    return json.dumps(map_card_details(img_url, price_history, card_info))
+    return jsonify(map_card_details(img_url, price_history, card_info))
 
 
 def map_card_details(img_url, price_history, card_info):
@@ -79,7 +79,7 @@ def convert_to_json(result):
         object_J['cardId'] = strip_card_id(object_J.get('cardNumber'))
         list_A.append(object_J)
 
-    return json.dumps(list_A)
+    return jsonify(list_A)
 
 
 def strip_card_id(card_num):
