@@ -80,7 +80,7 @@ def convert_to_json(result):
         object_J['cardId'] = strip_card_id(object_J.get('cardNumber'))
         list_A.append(object_J)
 
-    return jsonify(list_A)
+    return json.dumps(list_A)
 
 
 def strip_card_id(card_num):
