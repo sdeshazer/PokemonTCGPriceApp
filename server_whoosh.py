@@ -44,13 +44,16 @@ def card_details():
     card_name = data.get('name')
     set_id = data.get('setId')
     card_info = mySearcher.search_query_on_set(set_id, card_name, False)
-    return jsonify(map_card_details(img_url, price_history, card_info))
+    card_first = next(card_info)
+    print(str(card_first))
+    tomap = map_card_details(img_url, price_history, [card_first])
+    return jsonify(tomap)
 
 
 def map_card_details(img_url, price_history, card_info):
-
     job = convert_to_json(card_info)
     listA = json.loads(job)
+    print(job)
     listA[0]['priceOverTime'] = price_history
     listA[0]['cardImageFullRes'] = img_url
     return listA
